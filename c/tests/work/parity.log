@@ -1,0 +1,111 @@
+== parity run 2026-11-15T00:21:34Z
+python : Python 3.10.12 (python3)
+numpy  : 2.2.6
+cc     : cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+spg    : /home/botadmin/semantic-prince-repo/c/spg
+pysrc  : /home/botadmin/semantic-prince-repo/src
+SP_FORCE_FULLSORT=1 SP_FILLER_FULLSORT=1
+input sha256:
+  2fb46ff6734538cd8dab655c4d7b988faf89d15e78fa2b0477eec509afdd5537  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/dig.tsv
+  8aa6c590b93a86e4a4f10a3254ca06cfe20034b73b01a436a80d1123153cdfce  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/personal.txt
+  d9e02b74cac960e1cbbd860655e3b535dd30093db3a6d3b4f241833cbd2bff7a  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/pw_bi.tsv
+  075f89780517fbfe799b3472eab057645ce0494fe96d2b751370d0e8a744b509  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/pw_uni.tsv
+  c9311266d3d8105e610f57f9ff4aba5737ea754059e7ec4658e1d8e685a85fa4  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/stream.txt
+  577746a42963f226d6a13fe847ff4ce31786f17222c07783c0fc9b4c048e04e3  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/sym.tsv
+  69ef87f777b79da3f29e8346ca4a85e3136bf378af1e5bf801a33ee09ce83687  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/test.txt
+  fd5af91e6c72ef55663ecd609bc88b97771d9ddaae0dc0c76ea4765809d6eec6  /home/botadmin/semantic-prince-repo/c/tests/fixtures/mini/tpl.tsv
+  6b38d4c4ed73026d686593c41ea9a9e208d5582a2cca475e9f12ef80052ff356  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/bi.tsv
+  bae1b3e335abb16f75598053a53768a9fb109488715f8134a5ecd2055138c9f1  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/bi4.tsv
+  914ceabe35d3a2c2dc1e65077ae004f0b4fbf65d9eca1d89dcf1f35725a881de  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/dig.tsv
+  f35a6d3d69e6e374e80641f3001d61efb61edd9c964dd567d9ffee0f544b56ed  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/fix_budget.txt
+  e027afde636715564e9372a03daf39b06e854106a741521654d30f0edd30b490  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/fix_chains.txt
+  13c82101dee107cb85780d92392641cba3bb090bd194fc3956e5b657b3575a3c  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/fix_pairs.txt
+  930ead05607eec3809d3ad2a644871769f17e82d060a38ebc5efe549da95ccd8  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/fix_pairs_nd.txt
+  65736ca0b615a11f706954e5020da72db58851b40669a27a818e0e5fe05b8b08  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/gs_budget.txt
+  5f77f1618edd851625ec0914dcf6b9943b539bceb0c00b8080cfff937104c020  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/gs_global.txt
+  3327579c3c48661469c42daaacc51c40a57cd7c9b69118ba96b23ff91271fe6f  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/leet.txt
+  6f54a019e12717e6c8aed8056ea15eb41a4a52ef914587394a4b04b163432e6f  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/p_dedup.txt
+  1fb7ab31de4ac6ebc70e2855adc2de5c95f356b5c860d6d7c50582ee26a70117  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/p_nodedup.txt
+  c6476d9fb6b38674720e0684c057ff78e2becb47a964645f25035e9fafcbbfc9  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/personal.txt
+  e0f77f3c839811ec06753334ea65b1ad8fbc91b70480400604480394ee2a99cb  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/sym.tsv
+  640c07615382942ee325b7efed11f29fa8cfce50b99a280ddd10dbf797e16976  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/test1.txt
+  f1878e9368a3d606ecc639d2d2f188dc60a9ee42370ecc039fc42ee1452b9663  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/test_b4.txt
+  50f94563b8af95567a5ae18a1375cb4a25254a32edd5e701ea3711b2fcc5c6ff  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/tpl.tsv
+  faeaad2d2e1afe0ad464f43b5f21d39c0a07f20ed32b2c7644d2f27f91001d54  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/uni.tsv
+  e958bee5b7789f639625f76061e26e2a6196d37bbb7b97bab23645eda09ba783  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/uni4.tsv
+  5e873e5b9a3fa742b58484f386171425c4bd0fb4228d6bcc0f0b6ea204f7f9af  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/bi10.tsv
+  6337a05c16f8360b9f513a64152300ea154586f1dcaf56cb0b20296b437e5ea7  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/bi3.tsv
+  e027afde636715564e9372a03daf39b06e854106a741521654d30f0edd30b490  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12.txt
+  eb5b17f599a6ebff9f5bb2328c5111b0359e224ef4ff4bac9924db566bdbdb63  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12_ref.txt
+  81aa6c7b98ca741dd15468a67857fbf1dfe8166a251ee4db9701d202f70c4b71  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12t1.txt
+  0b13aa53d816672d049f188bb15522a3b790994c75703215ca439835776b58c5  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12t1_ref.txt
+  e027afde636715564e9372a03daf39b06e854106a741521654d30f0edd30b490  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12t80.txt
+  eb5b17f599a6ebff9f5bb2328c5111b0359e224ef4ff4bac9924db566bdbdb63  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/c12t80_ref.txt
+  e027afde636715564e9372a03daf39b06e854106a741521654d30f0edd30b490  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/cb0.txt
+  cd92c6de97b84dcd61951968333f759bbf4732d54e20a9179b1413078fbb9c53  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/cfull.txt
+  9ddb714d8a58e0dd0e46e684a36108e2b50448f401c1a24c41cbd82d015f662b  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/cfull_fixed.txt
+  97693be420852b287e9032de9e0ffca1a7b9f24a1ad5826f7606d566075b6ac3  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/clam2.txt
+  5317532f75c197e4ede7a0025263f0e2461edaf786f42311d56c582ea0f58f00  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/crlf_test.txt
+  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/ct0.txt
+  914ceabe35d3a2c2dc1e65077ae004f0b4fbf65d9eca1d89dcf1f35725a881de  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/dig.tsv
+  898bd222f68247c2aad8de5b394dbb1c6117de305e0d54e963375d6e19e20973  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/p12.txt
+  898bd222f68247c2aad8de5b394dbb1c6117de305e0d54e963375d6e19e20973  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/p12b.txt
+  59f7047a88ec36481a0a1c63f79219c11070fe42f2914e7c84a67c0864f7ab52  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/p12nd.txt
+  53a859d6aa22824d53faed33d4d9463142d7a602b7f819b7057a131f9eb39447  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/pers_dup.txt
+  16996afbe446b7822df98ab9923f2444083c9af55c8ca860923f2efabcc94f6c  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/redist.txt
+  924d391c158a46409fdff363063d718ea0bc00b14556f129984942af91233bbe  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/stream_abcd.txt
+  38e803e873ef56a0354d160e3eb693ae0d2bc14625c0afd3f50805e83f42906f  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/stream_crlf.txt
+  e0f77f3c839811ec06753334ea65b1ad8fbc91b70480400604480394ee2a99cb  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/sym.tsv
+  f933660e741088abac30dd470c4a79e0ae10248e5503e11f752ba0bba43ed73f  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/test_dup.txt
+  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/tie.txt
+  7645916debc9f7123b999abdbfea8c8fd1c1b5dbc4fe0bd0ed054a78035b15f7  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/tplR.tsv
+  3441084dcd014929c1dbcd81f2ea1c721514d14a80405fb40f5e1d9ece81ead7  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/tplZ.tsv
+  a31748f3670ec02c6ede94fcc37c3a4fbcf7bd2b013f12c4879488e3d74760a9  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/tplZ2.tsv
+  46c6464a3c1e55505a0c57e8dec68597b2f5c0299ab167d451f3273ed500c818  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/uni10.tsv
+  305431278f36ed6e18cf82a55c61de803c273d66890474b8f3e260816745f150  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/uni3.tsv
+  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/zero.txt
+  5ac5ce87d7799cf4fe480e5f875e1d84e21352c7dc4420ae8350d3b158328605  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/zero2.txt
+  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/zero3.txt
+  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt2/zerog.txt
+
+PASS(bit) L0 struct-rt-budget
+PASS(bit) L0 struct-rt-global
+PASS(bit) L0 struct-b6-flag-mid
+PASS(bit) L0 struct-b6-flag-pos
+PASS(bit) L0 struct-h1-zero-budget
+PASS(bit) L0 struct-h1-zero-global
+PASS(bit) L0 struct-h1-zero2-budget
+PASS(bit) L0 struct-h1-zero2-global
+PASS(bit) L0 pairs-rt-pwbi
+PASS(bit) L0 pairs-rt-pwbi-nodedup
+PASS(bit) L0 pairs-rt-freq
+PASS(bit) L0 pairs-rt2-pwbi
+PASS(bit) L0 pairs-rt2-pwbi-nodedup
+PASS(bit) L0 chains-rt-12
+PASS(bit) L0 chains-rt-t1
+PASS(bit) L0 chains-b3-t80
+PASS(canon) L0 chains-rt-lam05 (sets equal; first byte diff: /home/botadmin/semantic-prince-repo/c/tests/work/chains-rt-lam05.py.out /home/botadmin/semantic-prince-repo/c/tests/work/chains-rt-lam05.c.out differ: char 47, line 6)
+PASS(canon) L0 chains-h4-full (sets equal; first byte diff: /home/botadmin/semantic-prince-repo/c/tests/work/chains-h4-full.py.out /home/botadmin/semantic-prince-repo/c/tests/work/chains-h4-full.c.out differ: char 17, line 3)
+PASS(rc) L0 chains-h3-b0 (both rc=1)
+PASS(rc) L0 chains-h3-t0 (both rc=1)
+PASS(rc) L0 chains-h3-lam2 (both rc=1)
+PASS(bit) L0 targeted-b4
+PASS(bit) L0 targeted-b5-service
+PASS(bit) L0 targeted-h9-dup
+PASS(bit) L0 targeted-emit
+PASS(bit) L0 eval-crlf-set
+PASS(bit) L0 eval-crlf-stream
+PASS(bit) L0 eval-mini
+PASS(bit) L1 struct-mini-budget
+PASS(bit) L1 struct-mini-global
+PASS(bit) L1 pairs-mini-pwbi
+PASS(bit) L1 pairs-mini-freq
+PASS(bit) L1 chains-mini
+PASS(bit) L1 chains-mini-lam
+PASS(bit) L1 targeted-mini-emit
+PASS(bit) L0 dump-rt
+PASS(bit) L0 dump-rt2
+PASS(bit) L1 dump-mini
+SKIP    L0 spg-selftest (no spg subcommand 'selftest')
+
+== summary: PASS(bit)=33 PASS(canon)=2 PASS(rc)=3 PASS-PY=0 SKIP=1 FAIL=0

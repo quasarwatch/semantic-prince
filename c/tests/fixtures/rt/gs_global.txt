@@ -1,0 +1,17 @@
+aaaa
+aabb
+bbaa
+bbbb
+aacc
+ccaa
+bbcc
+ccbb
+aadd
+cccc
+ddaa
+bbdd
+ddbb
+ccdd
+ddcc
+dddd
+emitted: 16

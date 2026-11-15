@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "$(pwd)/../src/genstruct.py", line 260, in <module>
+    budget = int(math.ceil(LIMIT * (tpls[t][0] / total)))
+ZeroDivisionError: division by zero

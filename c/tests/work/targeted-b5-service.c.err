@@ -1,0 +1,3 @@
+service 'linkedin' -> ['mylinkedin', 'linkedin', 'linked', 'lnkd']
+personal file /home/botadmin/semantic-prince-repo/c/tests/fixtures/rt/personal.txt: 2 words -> 2
+personal words: 6, test slice: 2 (reachable: 2)

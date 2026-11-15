@@ -1,0 +1,13 @@
+alpha
+beta
+alpha
+gamma delta
+
+   
+	
+
+  padded  
+tab	tab
+crlf
+crlf
+zeta

@@ -1,0 +1,13 @@
+abcxx
+ababc
+ababc
+aabb
+xxab
+abcab
+xxabc
+abxx
+abcbc
+bcabc
+abaxx
+bcab
+emitted: 12

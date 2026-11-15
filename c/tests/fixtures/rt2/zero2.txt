@@ -1,0 +1,10 @@
+aabb
+bbaa
+aacc
+ccaa
+bbcc
+ccbb
+aadd
+ddaa
+bbdd
+ddbb

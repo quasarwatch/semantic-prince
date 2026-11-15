@@ -1,0 +1,3 @@
+$(pwd)/../src/genchains.py:61: RuntimeWarning: invalid value encountered in log
+  blk = mx + np.log(LAM * np.exp(blk - mx) + (1.0 - LAM) * np.exp(bi_ - mx))
+emitted: 12
