@@ -1,0 +1,15 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install python deps
+        run: pip install numpy
+      - name: Build spg (0 warnings required)
+        run: cd c && make 2>&1 | tee build.log && ! grep -iE "warning|error" build.log
+      - name: Parity harness (C vs Python, all regressions)
+        run: cd c && ./tests/parity.sh

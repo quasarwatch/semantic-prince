@@ -1,0 +1,12 @@
+abaab
+ababa
+bcab
+abbc
+abcab
+ababc
+bcaba
+ababc
+abcaba
+abaabc
+xxab
+abxx

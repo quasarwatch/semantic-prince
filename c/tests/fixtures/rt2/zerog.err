@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "$(pwd)/../src/genstruct.py", line 243, in <module>
+    off = math.log(c / tpl_total)  # template prior: joint P = P(tpl) * P(fill|tpl)
+ZeroDivisionError: division by zero
