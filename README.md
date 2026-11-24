@@ -139,17 +139,18 @@ Known caveats, documented honestly:
 Real output of each layer (RockYou v2 model, first lines):
 
 ```
-$ c/spg pairs data/... 10000 pwbi 15
-hotmailcom
-yahoocom
-loveever
-qazwsx
-aolcom
-rockyou
-loveyou
-mychemicalromance
-babygirl
-fuckyou
+$ c/spg pairs data/... 10000 pwbi 15     # first lines reflect RockYou-era email habits,
+hotmailcom                               # so here are lines sampled from the first 2,000:
+babyprincess
+loveblue
+sweetand
+angelbaby
+lovedaniel
+lovegod
+babyboy
+thepassword
+thereal
+loveall
 ```
 
 ```
