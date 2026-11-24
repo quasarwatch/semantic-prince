@@ -70,7 +70,7 @@ CASES=""
 case_add() { CASES="$CASES$1
 "; }
 
-# ---- L0: struct (B1, B6, H1) ----
+# ---- L0: struct (B1, B6, H1, H8) ----
 GS_RT="genstruct.py $RT/uni4.tsv $RT/bi4.tsv $RT/tpl.tsv $RT/dig.tsv $RT/sym.tsv"
 GS_RT_C="$RT/uni4.tsv $RT/bi4.tsv $RT/tpl.tsv $RT/dig.tsv $RT/sym.tsv"
 case_add "struct-rt-budget|L0|struct|stream|$GS_RT 4 24|$GS_RT_C 4 24|golden=$RT/fix_budget.txt"
@@ -85,6 +85,7 @@ case_add "struct-h1-zero-budget|L0|struct|stream|$GS_Z 4 10|$GS_Z_C 4 10|expect_
 case_add "struct-h1-zero-global|L0|struct|stream|$GS_Z 4 10 0.7 global|$GS_Z_C 4 10 0.7 global|expect_lines=0"
 case_add "struct-h1-zero2-budget|L0|struct|stream|$GS_Z2 4 100|$GS_Z2_C 4 100|expect_lines=12"
 case_add "struct-h1-zero2-global|L0|struct|stream|$GS_Z2 4 10 0.7 global|$GS_Z2_C 4 10 0.7 global|expect_lines=10"
+case_add "struct-h8-ntpl0|L0|struct|stream|$GS_RT 4 10 0.7 budget 0|$GS_RT_C 4 10 0.7 budget 0|expect_rc=1;err_grep=NTPL (templates cap)"
 
 # ---- L0: pairs (B2) ----
 # goldens: rt/fix_pairs* = rt/uni.tsv+bi.tsv;  rt2/p12* = rt2/uni10.tsv+bi10.tsv
@@ -120,12 +121,13 @@ case_add "chains-h3-b0|L0|chains|stream|$GC 10 12 0.7 0|$GC_C 10 12 0.7 0|expect
 case_add "chains-h3-t0|L0|chains|stream|$GC 10 12 0.7 12 0|$GC_C 10 12 0.7 12 0|expect_rc=1;err_grep=T (continuations"
 case_add "chains-h3-lam2|L0|chains|stream|$GC 10 12 0.7 12 20 0 127 2.0|$GC_C 10 12 0.7 12 20 0 127 2.0|expect_rc=1;err_grep=lam must be"
 
-# ---- L0: targeted (B4, B5, H9) ----
+# ---- L0: targeted (B4, B5, H9, H6) ----
 TG="targeted.py $RT/uni.tsv $RT/bi.tsv $RT/test_b4.txt 50 10"
 TG_C="$RT/uni.tsv $RT/bi.tsv $RT/test_b4.txt 50 10"
 case_add "targeted-b4|L0|targeted|stream|$TG --personal=$RT/personal.txt|$TG_C --personal=$RT/personal.txt|"
 case_add "targeted-b5-service|L0|targeted|stream|$TG --personal=$RT/personal.txt --service=linkedin|$TG_C --personal=$RT/personal.txt --service=linkedin|err_grep=personal words: 6"
 case_add "targeted-h9-dup|L0|targeted|stream|targeted.py $RT/uni.tsv $RT/bi.tsv $RT/test_b4.txt 50 10 --personal=$RT2/pers_dup.txt|$TG_C --personal=$RT2/pers_dup.txt|err_grep=3 words -> 2~personal words: 2"
+case_add "targeted-h6-dup|L0|targeted|stream|targeted.py $RT/uni.tsv $RT/bi.tsv $RT2/test_dup.txt 50 10 --personal=$RT/personal.txt|$RT/uni.tsv $RT/bi.tsv $RT2/test_dup.txt 50 10 --personal=$RT/personal.txt|err_grep=test slice: 2"
 case_add "targeted-emit|L0|targeted|stream|$TG --emit=ab,xx|$TG_C --emit=ab,xx|"
 
 # ---- L0: evaluate (H7) ----

@@ -2241,13 +2241,42 @@ int spg_targeted(int argc, char **argv)
       goto out;
     }
 
+    /* H6: slice/hit accounting over unique lines, as in evaluate.py;
+     * duplicate test lines are skipped entirely (first occurrence wins) */
+    sset seen_test;
+
+    if (sset_init(&seen_test, 1024) != 0)
+    {
+      free(pwcp);
+      free(tb);
+      i64map_free(&hit_pw);
+      free(sc.cond_f);
+      free(sc.cond_r);
+      goto out;
+    }
+
     int64_t slice_size = 0;
     int64_t pwid = 0;
     size_t  it = 0, loff, llen;
+    int     oom = 0;
 
     while (next_line(tb, tn, &it, &loff, &llen))
     {
       uint8_t *pw = tb + loff;
+      const int dr = sset_add(&seen_test, pw, (uint32_t) llen);
+
+      if (dr < 0)
+      {
+        oom = 1;
+        break;
+      }
+
+      if (dr == 0)              /* duplicate line: already accounted */
+      {
+        pwid++;
+        continue;
+      }
+
       const size_t cl = utf8_clean(pw, llen);
       size_t cpn = 0;
 
@@ -2298,11 +2327,42 @@ int spg_targeted(int argc, char **argv)
       pwid++;
     }
 
+    sset_free(&seen_test);
     free(tb);
+
+    if (oom)
+    {
+      free(pwcp);
+      i64map_free(&hit_pw);
+      free(sc.cond_f);
+      free(sc.cond_r);
+      goto out;
+    }
+
+    /* H5: reachable = unique passwords with >= 1 qualifying split
+     * (hit_pw may hold several split registrations per password) */
+    i64set reach;
+    int64_t n_reach = 0;
+
+    if (i64set_init(&reach, hit_pw.n * 2) != 0)
+    {
+      free(pwcp);
+      i64map_free(&hit_pw);
+      free(sc.cond_f);
+      free(sc.cond_r);
+      goto out;
+    }
+
+    for (int64_t i = 0; i < hit_pw.cap; i++)
+      if (hit_pw.k[i] != I64_EMPTY)
+        i64set_add(&reach, hit_pw.v[i]);
+
+    n_reach = reach.n;
+    i64set_free(&reach);
 
     fprintf(stderr, "personal words: %llu, test slice: %llu (reachable: %llu)\n",
             (unsigned long long) P, (unsigned long long) slice_size,
-            (unsigned long long) hit_pw.n);
+            (unsigned long long) n_reach);
 
     /* ---------------- candidate scores ---------------- */
 

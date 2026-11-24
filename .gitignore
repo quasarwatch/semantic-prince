@@ -5,3 +5,7 @@ data/
 /tmp/
 dist/
 *.tar.gz
+c/spg
+*.o
+*.d
+c/tests/work/

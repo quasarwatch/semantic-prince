@@ -42,6 +42,9 @@ if T <= 0:
     sys.exit("error: T (continuations per seam) must be >= 1, got %d" % T)
 if not 0.0 <= LAM <= 1.0:
     sys.exit("error: lam must be in [0, 1], got %s" % LAM)
+if limit <= 0:
+    print("emitted: 0", file=sys.stderr)
+    sys.exit(0)
 
 m = load_vocab_model(uni_path, bi_path, K)
 words, wb, counts, logu = m.words, m.wb, m.counts, m.logu
@@ -113,9 +116,12 @@ out = sys.stdout.buffer
 seen = set()
 CH = 500_000
 emitted = 0
-start = 0                    # sorted candidates already scanned
 cut = min(limit, sc.size)    # selection depth; topped up on dedup shortfall
-while start < sc.size:
+# H2: top-up rounds re-scan from 0 and let the dedup set (which records every
+# scanned candidate) skip the old ones -- exact under any tie order, unlike the
+# old positional skip (start=cut), which could drop an unseen candidate when
+# argpartition permuted boundary ties between rounds.
+while True:
     if cut < sc.size // 4:
         top = np.argpartition(sc, -cut)[-cut:]
         order = top[np.argsort(sc[top], kind="stable")[::-1]]
@@ -123,7 +129,7 @@ while start < sc.size:
     else:
         order = np.argsort(sc, kind="stable")[::-1][:cut]
     dry = False
-    for s in range(start, cut, CH):
+    for s in range(0, cut, CH):
         e = min(s + CH, cut)
         o = order[s:e]
         ninf = np.isneginf(sc[o])
@@ -139,7 +145,6 @@ while start < sc.size:
         if dry:
             break
     del order
-    start = cut
     if dry or emitted >= limit or cut == sc.size:
         break
     cut = min(cut + 2 * (limit - emitted), sc.size)  # recover deduped slots

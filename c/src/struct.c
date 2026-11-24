@@ -1576,6 +1576,13 @@ int cmd_struct(int argc, char **argv)
   const char    *mode  = npos > 8 ? pos[8] : "budget";
   const int64_t  ntpl  = npos > 9 ? strtoll(pos[9], NULL, 10) : 300;
 
+  if (ntpl < 1)
+  {
+    fprintf(stderr, "spg struct: error: NTPL (templates cap) must be >= 1, "
+                    "got %lld\n", (long long) ntpl);
+    return 1;
+  }
+
   double gamma = 1.0;
 
   const char *ge = getenv("GENSTRUCT_GAMMA");

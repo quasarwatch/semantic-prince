@@ -42,6 +42,8 @@ K, LIMIT = int(pos[5]), int(pos[6])
 ALPHA = float(pos[7]) if len(pos) > 7 else 0.7
 MODE = pos[8] if len(pos) > 8 else "budget"
 NTPL = int(pos[9]) if len(pos) > 9 else 300
+if NTPL < 1:
+    sys.exit("error: NTPL (templates cap) must be >= 1, got %d" % NTPL)
 DEDUP = "--no-dedup" not in sys.argv
 GAMMA = float(os.environ.get("GENSTRUCT_GAMMA", "1.0"))  # D/S score penalty (global mode calibration)
 GRID_MAX = 2_000_000

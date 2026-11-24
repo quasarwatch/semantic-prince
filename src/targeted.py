@@ -196,13 +196,15 @@ if emit_spec:
 
 # test slice: pw starts/ends with a personal word, remainder pure alpha len>=3
 # hitkey = ((w_idx * K) + x_idx) * 2 + dir, dir 0 = w+x, 1 = x+w
-hit_pw = {}   # hitkey -> password (unique-hit accounting by pw id)
-              # NB: first line with a given split wins; a duplicate test line
-              # counts into slice_size but can never become a hit (latent)
+hit_pw = {}   # hitkey -> pwid of the FIRST line with that split
 slice_size = 0
+seen_test = set()   # slice/hit accounting over unique lines, as in evaluate.py
 with open(test_path, errors="ignore") as f:
     for pwid, line in enumerate(f):
         pw = line.rstrip("\n")
+        if pw in seen_test:
+            continue
+        seen_test.add(pw)
         if not pw.isalpha():
             continue
         if not (pw.startswith(pt) or pw.endswith(pt)):
@@ -224,10 +226,10 @@ with open(test_path, errors="ignore") as f:
                     hit_pw.setdefault(((wi * K) + xi) * 2 + 1, pwid)
         if qualified:
             slice_size += 1
-# reachable counts qualifying split registrations, not unique passwords:
-# one password with two qualifying splits counts twice (may exceed slice)
+# reachable = unique passwords having at least one qualifying split
+# (a password with two splits registers twice in hit_pw but counts once)
 print("personal words: %d, test slice: %d (reachable: %d)" %
-      (len(personal), slice_size, len(hit_pw)), file=sys.stderr)
+      (len(personal), slice_size, len(set(hit_pw.values()))), file=sys.stderr)
 
 # candidate scores, vectorized per personal word
 n_cand = len(personal) * K * 2

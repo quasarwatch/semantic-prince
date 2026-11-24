@@ -37,6 +37,9 @@ words, wb, counts, logu = m.words, m.wb, m.counts, m.logu
 K = len(words)
 space = K * K - K  # non-diagonal pairs (diagonal scores -inf, never selected)
 limit = min(limit, space)
+if limit <= 0:
+    print("emitted: 0", file=sys.stderr)
+    sys.exit(0)
 
 if mode == "pwbi":
     M = np.zeros((K, K))
@@ -61,16 +64,21 @@ out = sys.stdout.buffer
 seen = set() if DEDUP else None
 CH = 1_000_000
 emitted = 0
-start = 0                    # sorted candidates already scanned
 cut = limit                  # selection depth; topped up on dedup shortfall
-while start < space:
+# H2: on top-up rounds re-scan the (deeper) selection from 0 and rely on the
+# dedup set -- it records EVERY scanned candidate, so it is an exact "already
+# considered" marker. The old positional skip (start=cut) was exact only under
+# the deterministic full sort; under argpartition, boundary ties permute
+# between rounds and an unseen candidate could land inside the skipped prefix
+# and be silently dropped.
+while True:
     if cut < flat.size // 4 and not FULLSORT:
         top = np.argpartition(flat, -cut)[-cut:]
         order = top[np.argsort(flat[top], kind="stable")[::-1]]
         del top
     else:
         order = np.argsort(flat, kind="stable")[::-1][:cut]
-    i_all, j_all = np.unravel_index(order[start:], (K, K))
+    i_all, j_all = np.unravel_index(order, (K, K))
     del order
     for s in range(0, len(i_all), CH):
         e = min(s + CH, len(i_all))
@@ -82,7 +90,6 @@ while start < space:
             out.write(b"\n".join(parts) + b"\n")
             emitted += len(parts)
     del i_all, j_all
-    start = cut
     if emitted >= limit or cut == space:
         break
     cut = min(cut + 2 * (limit - emitted), space)  # recover deduped slots
