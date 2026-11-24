@@ -13,11 +13,11 @@ Semantic PRINCE is the layer *after* your dictionary. Real attacks always replay
 | 100K | 66,869 | 66,869 |
 | 1M | 304,930 | 304,930 |
 | 10M | 565,429 | 565,429 |
-| ~54M | 705,256 | **803,674** (+14.0%) |
+| ~54M | 705,256 | **809,052** (+14.7%) |
 
-The rows are identical up to 10M because both stacks spend that budget on the same replay head (12.9M known passwords); the generators only differ afterwards. At an equal total budget the stack with Semantic PRINCE cracks 14% more; classic PRINCE needs 112M guesses to reach 706K.
+The rows are identical up to 10M because both stacks spend that budget on the same replay head (12.9M known passwords); the generators only differ afterwards. At an equal total budget the stack with Semantic PRINCE cracks 14.7% more; classic PRINCE needs 112M guesses to reach 706K.
 
-Model-only (no dictionary head), the gap is wider: 41,006 vs 8,602 cracked at 100K guesses (x4.8) and 420,917 vs 202,971 at the end of a 43M vs 100M run (x2.07 with 43% of the budget).
+Model-only (no dictionary head), the gap is wider: 41,211 vs 8,602 cracked at 100K guesses (x4.8) and 443,709 vs 202,971 at the end of a 43M vs 100M run (x2.19 with 43% of the budget).
 
 ## Overview
 
@@ -77,12 +77,12 @@ c/spg pairs  data/pw_uni.tsv data/pw_bi.tsv 10000 pwbi 5000000 >> short.txt
 hashcat -m 0 -a 0 hashes.txt short.txt
 ```
 
-The full campaign (long attack, 43M candidates):
+The full campaign (long attack, 43M candidates, K=20000 vocabulary — needs about 6 GB RAM for the pairs layer; use 10000 on small machines, the difference is negligible below 1M guesses):
 
 ```
-c/spg struct  data/pw_uni.tsv data/pw_bi.tsv data/struct_templates.tsv data/struct_digits.tsv data/struct_syms.tsv 10000 14000000 >  campaign.txt
-c/spg pairs   data/pw_uni.tsv data/pw_bi.tsv 10000 pwbi 25000000                                >> campaign.txt
-c/spg chains  data/pw_uni.tsv data/pw_bi.tsv 10000  4000000 0.7 2000000 80                      >> campaign.txt
+c/spg struct  data/pw_uni.tsv data/pw_bi.tsv data/struct_templates.tsv data/struct_digits.tsv data/struct_syms.tsv 20000 14000000 >  campaign.txt
+c/spg pairs   data/pw_uni.tsv data/pw_bi.tsv 20000 pwbi 25000000                                >> campaign.txt
+c/spg chains  data/pw_uni.tsv data/pw_bi.tsv 20000  4000000 0.7 2000000 80                      >> campaign.txt
 hashcat -m 0 -a 0 hashes.txt campaign.txt
 ```
 
@@ -121,10 +121,10 @@ Model-only, measured against classic PRINCE (pp64 with the same top-5000 diction
 
 | test set | @100K | @1M | @10M | final |
 |---|---|---|---|---|
-| linkedin (clean, 4.36M) | 4,470 / 2,767 (**x1.62**) | 35,743 / 11,630 (**x3.07**) | 91,840 / 58,889 (**x1.56**) | **194,986 @ 43M** vs 104,797 @ 100M |
-| rockyou (validation, 1.37M) | 4,718 / 2,101 (**x2.25**) | 29,149 / 9,010 (**x3.24**) | 66,960 / 41,596 (**x1.61**) | **143,950 @ 43M** vs 72,484 @ 100M |
+| linkedin (clean, 4.36M) | 4,468 / 2,767 (**x1.61**) | 35,778 / 11,630 (**x3.08**) | 92,570 / 58,889 (**x1.57**) | **199,602 @ 43M** vs 104,797 @ 100M |
+| rockyou (validation, 1.37M) | 4,710 / 2,101 (**x2.24**) | 29,187 / 9,010 (**x3.24**) | 67,686 / 41,596 (**x1.63**) | **150,078 @ 43M** vs 72,484 @ 100M |
 
-(Each cell: Semantic PRINCE / pp64 cracked-count, ratio. Account-weighted — counting how many *accounts* the cracked passwords represent, not how many distinct strings — the same 43M campaign covers 11.5% of validation accounts at 100K guesses and 34.1% at the end: hits concentrate on high-multiplicity passwords.)
+(Each cell: Semantic PRINCE / pp64 cracked-count, ratio. Account-weighted — counting how many *accounts* the cracked passwords represent, not how many distinct strings — the same 43M campaign covers 11.9% of validation accounts at 100K guesses and 35.6% at the end: hits concentrate on high-multiplicity passwords.)
 
 Full methodology, the exact pp64 command, the stack (with-dictionary) tables and the red-team audits: `docs/METHODOLOGY.md`.
 

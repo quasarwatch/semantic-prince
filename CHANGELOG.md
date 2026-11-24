@@ -5,6 +5,7 @@
 Model and robustness update, no interface changes.
 
 - The prebuilt model in Releases is now `sp-model-rockyou-v2.tar.gz`: account-weighted training (passwords weighted by real usage counts). Model-only gains vs v1 on raw cross-dump sets: +2-6% at 100K guesses, +20-26% at 1M; on clean sets v2 wins the 1M zone (+14-28%) and is within a few percent elsewhere (full tables in docs/METHODOLOGY.md)
+- Recommended campaign vocabulary is now K=20000 (was 10000): a wash below 1M guesses, +3-5% at 43M. The tables in the data pack cover 68K words; K is a runtime parameter, no re-download needed
 - Fix (pairs/chains): after dedup, a top-up round could silently skip an equal-score candidate when tie order permuted between rounds; top-up now rescans under the exact dedup set. No quality change, ordering semantics now exact
 - Fix (targeted): the "reachable" metric counts unique passwords, not split registrations; duplicate test lines no longer inflate the slice
 - Fix (struct): NTPL < 1 is rejected instead of silently loading all templates
