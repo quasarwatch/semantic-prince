@@ -102,18 +102,24 @@ The first writes `data/pw_uni.tsv` / `data/pw_bi.tsv` (word unigram/bigram count
 ### Targeted mode
 
 ```
-c/spg targeted data/pw_uni.tsv data/pw_bi.tsv test.txt 200 10000 --personal=words.txt --service=linkedin --deleet
+c/spg targeted data/pw_uni.tsv data/pw_bi.tsv /dev/null 200 10000 --emit=elena,1990
 ```
 
-`--personal` takes a file of the person's known words, one per line. `--service` injects the service name and its common variants at top priority. `--deleet` normalizes leet forms on input. For real-time candidates instead of a measured run, `--emit=w1,w2,...` streams candidates for specific pivot words.
+`--emit=w1,w2,...` streams candidates for specific pivot words (no test file needed, `/dev/null` stands in). For a measured run instead, pass your own password list in place of `/dev/null`:
+
+```
+c/spg targeted data/pw_uni.tsv data/pw_bi.tsv mylist.txt 200 10000 --personal=words.txt --service=linkedin --deleet
+```
+
+`--personal` takes a file of the person's known words, one per line. `--service` injects the service name and its common variants at top priority. `--deleet` normalizes leet forms on input.
 
 ### Scoring your own candidates
 
 ```
-c/spg evaluate test.txt < candidates.txt
+c/spg evaluate mytest.txt < candidates.txt
 ```
 
-Counts unique hits at 100K / 1M / 10M / 100M guess checkpoints. Handles CRLF, duplicates and empty lines.
+Counts unique hits against `mytest.txt` (any password list, one per line) at 100K / 1M / 10M / 100M guess checkpoints. Handles CRLF, duplicates and empty lines.
 
 ## Benchmarks
 
