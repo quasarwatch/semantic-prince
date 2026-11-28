@@ -52,6 +52,18 @@
 #define GRID_MAX  2000000u
 #define MAXL      16u
 
+/* counts ceiling at TSV parse time: keeps every downstream int64 sum far
+ * from overflow and every float64 ratio exact (python holds counts as
+ * arbitrary-precision ints, but its quota/prior math is float64 anyway,
+ * so nothing valid is lost) */
+#define COUNT_MAX   (INT64_MAX / 4)
+
+/* per-candidate buffer ceiling: segment values come from the dig/sym TSVs
+ * with no intrinsic length limit, so a corrupt model could otherwise wrap
+ * the uint32 buffer size (audit C6); 256 MiB is far beyond any real
+ * password candidate */
+#define CAND_CAP_MAX  (256u << 20)
+
 /* ------------------------------------------------------------------ */
 /* utilities                                                           */
 
@@ -347,7 +359,13 @@ static void build_fillers(const sp_model *m, double alpha)
   int64_t csum = 0;
 
   for (uint32_t i = 0; i < K; i++)
+  {
+    /* defense in depth against a lenient model loader (audit C8) */
+    if (m->counts[i] < 0 || csum > INT64_MAX - m->counts[i])
+      die("unigram counts out of range");
+
     csum += m->counts[i];
+  }
 
   const double dsum = (double) csum;
 
@@ -579,6 +597,11 @@ static void load_run_values(const char *path, double gamma, runvals *r)
     if (end == t2 + 1)
       die("bad run count");
 
+    /* c <= 0 is a math.log() domain error in the python reference and made
+     * NaN scores here (audit C8); huge counts overflow the int64 totals */
+    if (c <= 0 || c > COUNT_MAX)
+      die("run count out of range");
+
     runval *rv = runval_find(r, (uint32_t) l);
 
     if (!rv)
@@ -623,7 +646,12 @@ static void load_run_values(const char *path, double gamma, runvals *r)
     rv->c[rv->n]     = c;
     rv->n++;
     rv->alen        += vlen;
-    rv->total       += c;
+
+    if (c > INT64_MAX - rv->total)   /* unreachable after the COUNT_MAX
+                                        parse check; belt and braces (C8) */
+      die("run counts overflow");
+
+    rv->total += c;
   }
 
   free(line);
@@ -672,6 +700,23 @@ static const seglist *runval_get(const runvals *r, uint32_t len)
       return &r->rv[k].sl;
 
   return NULL;
+}
+
+static void runvals_free(runvals *r)
+{
+  for (uint32_t k = 0; k < r->n; k++)
+  {
+    free(r->rv[k].arena);
+    free(r->rv[k].sl.strs);
+    free(r->rv[k].sl.scores);
+    free(r->rv[k].v);    /* already NULL after finalize */
+    free(r->rv[k].c);
+  }
+
+  free(r->rv);
+  r->rv = NULL;
+  r->n  = 0;
+  r->cap = 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -773,6 +818,12 @@ static uint64_t load_templates(const char *path, int64_t ntpl_max,
 
       if (end == tab + 1)
         die("bad template count");
+
+      /* c == 0 is valid (H1: no quota share, never wins the merge);
+       * c < 0 crashes the python reference in global mode (log domain)
+       * and made NaN heap keys here; huge counts overflow tpl_total (C8) */
+      if (c < 0 || c > COUNT_MAX)
+        die("template count out of range");
 
       if (ntpl == cap)
       {
@@ -1041,13 +1092,22 @@ static gen *gen_new(seglist **segs, uint32_t nsegs)
   g->is_heap = heap;
   g->space   = heap ? 0 : prod;
 
-  uint32_t cap = 1;
+  /* candidate buffer: 1 + sum of segment maxlens.  Computed in uint64:
+   * dig/sym values come from a TSV with no length limit, so the uint32 sum
+   * could wrap into a too-small buffer (audit C6); beyond a sane ceiling a
+   * "candidate" is a corrupt model, not a password -- fail cleanly */
+  uint64_t cap = 1;
 
   for (uint32_t k = 0; k < nsegs; k++)
+  {
     cap += segs[k]->maxlen;
 
+    if (cap > CAND_CAP_MAX)
+      die("candidate too large (corrupt run-values file?)");
+  }
+
   g->cand     = xmalloc(cap);
-  g->cand_cap = cap;
+  g->cand_cap = (uint32_t) cap;
 
   if (heap)
     gen_heap_init(g);
@@ -1185,6 +1245,20 @@ static int gen_next(gen *g, double *score)
   return 1;
 }
 
+static void gen_free(gen *g)
+{
+  free(g->cand);
+  free(g->scratch);
+  free(g->g_sc);
+  free(g->g_order);
+  free(g->h_neg);
+  free(g->h_tup);
+  free(g->tups);
+  free(g->seen_h);
+  free(g->seen_i);
+  free(g);
+}
+
 /* ------------------------------------------------------------------ */
 /* dedup set + output                                                  */
 
@@ -1204,9 +1278,16 @@ static uint64_t g_emitted;
 
 static void dset_init(dset *d, uint64_t limit)
 {
+  /* presize so that `limit` entries fit below load 3/4.  The presize is an
+   * optimization only (dset_add rehashes on demand), so compute the target
+   * without wraparound (audit C2: limit >= 2^62 wrapped limit*4, cap grew
+   * to 2^63, doubled into 0 and looped forever) and never grow the initial
+   * table past 2^26 slots; identical sizing as before for limit <= 50M */
+  const uint64_t t    = limit > UINT64_MAX / 4 ? UINT64_MAX : limit * 4;
+  const uint64_t need = t / 3 + (t % 3 != 0);   /* cap*3 < t <=> cap < need */
   uint64_t cap = 1 << 16;
 
-  while (cap * 3 < (limit > 0 ? (uint64_t) limit : 1) * 4)
+  while (cap < need && cap < (1u << 26))
     cap *= 2;
 
   d->cap  = cap;
@@ -1305,7 +1386,20 @@ static int emit(const uint8_t *cand, uint32_t len)
     return 0;
 
   if (g_outn + len + 1 > sizeof(g_outbuf))
+  {
     out_flush();
+
+    /* a single candidate longer than the whole buffer bypasses it (same
+     * direct-write as obuf_write in targeted.c; audit C7) */
+    if ((uint64_t) len + 1 > sizeof(g_outbuf))
+    {
+      fwrite(cand, 1, len, stdout);
+      fputc('\n', stdout);
+      g_emitted++;
+
+      return 1;
+    }
+  }
 
   memcpy(g_outbuf + g_outn, cand, len);
   g_outn += len;
@@ -1345,7 +1439,13 @@ static void run_budget(const tpl *tpls, uint64_t ntpl, int64_t limit)
     int64_t total = 0;
 
     for (uint64_t i = 0; i < nlive; i++)
+    {
+      /* unreachable after the COUNT_MAX parse check; belt and braces (C8) */
+      if (tpls[live[i]].c > INT64_MAX - total)
+        die("template counts overflow");
+
       total += tpls[live[i]].c;
+    }
 
     const uint64_t nsnap = nlive;
 
@@ -1387,6 +1487,14 @@ static void run_budget(const tpl *tpls, uint64_t ntpl, int64_t limit)
       if (alive[t])
         live[nlive++] = t;
   }
+
+  for (uint64_t t = 0; t < ntpl; t++)
+    gen_free(gens[t]);
+
+  free(gens);
+  free(alive);
+  free(live);
+  free(snap);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1457,7 +1565,13 @@ static void run_global(const tpl *tpls, uint64_t ntpl, int64_t limit)
   int64_t tpl_total = 0;
 
   for (uint64_t t = 0; t < ntpl; t++)
+  {
+    /* unreachable after the COUNT_MAX parse check; belt and braces (C8) */
+    if (tpls[t].c > INT64_MAX - tpl_total)
+      die("template counts overflow");
+
     tpl_total += tpls[t].c;
+  }
 
   /* genstruct.py builds the per-template genexprs `(s + off, cand)` in a
    * loop but heapq.merge consumes them only afterwards: `off` is late-bound,
@@ -1535,6 +1649,9 @@ static void run_global(const tpl *tpls, uint64_t ntpl, int64_t limit)
       emit(g->cand, g->cand_len);
   }
 
+  for (uint64_t g = 0; g < G; g++)
+    gen_free(gg[g]);
+
   free(gg);
   free(h);
 }
@@ -1561,6 +1678,7 @@ int cmd_struct(int argc, char **argv)
     fprintf(stderr,
             "usage: spg struct UNI BI TPL DIG SYM K LIMIT [alpha]"
             " [budget|global] [ntpl] [--no-dedup]\n");
+    free(pos);
     return 2;
   }
 
@@ -1580,6 +1698,7 @@ int cmd_struct(int argc, char **argv)
   {
     fprintf(stderr, "spg struct: error: NTPL (templates cap) must be >= 1, "
                     "got %lld\n", (long long) ntpl);
+    free(pos);
     return 1;
   }
 
@@ -1616,6 +1735,14 @@ int cmd_struct(int argc, char **argv)
 
   out_flush();
   fprintf(stderr, "emitted: %llu\n", (unsigned long long) g_emitted);
+
+  for (uint64_t t = 0; t < ntpl_n; t++)
+    free(tpls[t].segs);
+
+  free(tpls);
+  runvals_free(&dig);
+  runvals_free(&sym);
+  free(pos);
 
   sp_model_free(&m);
 

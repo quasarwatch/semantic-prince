@@ -6,7 +6,11 @@
 # "spg pairs" via SP_SCORES_BIN=<file>.
 # Layout: logu (K f64) then logp (K*K f64), C-order (i*K+j).
 # Usage: dump_scores.py pw_uni.tsv pw_bi.tsv K alpha out.bin
-import sys
+import sys, os
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "..", "src"))
+
 import numpy as np
 from spmodel import load_vocab_model
 

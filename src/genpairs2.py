@@ -28,9 +28,15 @@ FULLSORT = os.environ.get("SP_FORCE_FULLSORT") == "1"
 if "--help" in sys.argv or len([a for a in sys.argv[1:] if not a.startswith("--")]) < 5:
     sys.stderr.write("usage: genpairs2.py UNI BI K freq|pwbi LIMIT [alpha] [--no-dedup]\n");
     sys.exit(1)
-uni_path, bi_path, K, mode, limit = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], int(sys.argv[5])
-ALPHA = float(sys.argv[6]) if len(sys.argv) > 6 and sys.argv[6] != "--no-dedup" else 0.7
+# flags may appear anywhere after the positionals; unknown extras are an error
+args = [a for a in sys.argv[1:] if a != "--no-dedup"]
 DEDUP = "--no-dedup" not in sys.argv
+uni_path, bi_path, K, mode, limit = args[0], args[1], int(args[2]), args[3], int(args[4])
+ALPHA = float(args[5]) if len(args) > 5 else 0.7
+if len(args) > 6:
+    sys.exit("error: unexpected argument %r" % args[6])
+if mode not in ("freq", "pwbi"):
+    sys.exit("error: unknown mode %r (expected: freq, pwbi)" % mode)
 
 m = load_vocab_model(uni_path, bi_path, K)
 words, wb, counts, logu = m.words, m.wb, m.counts, m.logu

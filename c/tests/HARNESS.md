@@ -1,9 +1,10 @@
 # HARNESS.md — паритет-харнесс C vs Python (Semantic PRINCE, lab2)
 
 Инфраструктура уровней L0-L1 из `results/lab2/c_port_plan.md` (раздел 5).
-Состояние на 2026-11-14: эталонная сторона зелёная (39/39 PASS-PY),
-C-подкоманды struct/pairs/chains/targeted/evaluate — stub -> SKIP,
-гейт G1 (`spg dump`) уже побитово зелёный. Итоговый exit код — 0.
+Состояние на 2026-11-27: C-порт реализован целиком, все подкоманды живые.
+41 кейс: 40 PASS (34 побитово, 2 канонически, 4 по rc), единственный
+SKIP — spg-selftest (встроенной подкоманды selftest в spg нет), FAIL=0.
+Итоговый exit код — 0.
 
 ## Структура
 
@@ -11,7 +12,7 @@ C-подкоманды struct/pairs/chains/targeted/evaluate — stub -> SKIP,
 c/tests/
   parity.sh            общий раннер (bash, без внешних зависимостей)
   gen_fixtures.py      детерминированный генератор всех мини-фикстур
-  regressions.md       карта 12 багов (7+5) -> кейсы -> статусы
+  regressions.md       карта 14 багов (7+7) -> кейсы -> статусы
   HARNESS.md           этот файл
   fixtures/
     rt/                фикстуры редтима v1 (перенесены из /tmp/rt: uni4/bi4/
@@ -47,7 +48,8 @@ Exit код: 0, если FAIL=0 (SKIP не считается ошибкой). F
 ## Что делает раннер для каждого кейса
 
 1. Прогоняет Python-эталон (`src/*.py`, с SP_FORCE_FULLSORT=1 /
-   SP_FILLER_FULLSORT=1 в окружении — паритет-режим плана 5.2, пока no-op)
+   SP_FILLER_FULLSORT=1 в окружении — паритет-режим плана 5.2: полная
+   стабильная сортировка вместо argpartition)
    и сверяет с голденом/счётчиком строк/rc/сообщением stderr — контроль
    дрейфа бейзлайна (риск R6).
 2. Проверяет доступность C-стороны: бинарник исполняемый, подкоманда
@@ -63,18 +65,19 @@ Exit код: 0, если FAIL=0 (SKIP не считается ошибкой). F
 Заголовок `work/parity.log`: версии python/numpy/cc, пути, sha256 всех
 входных TSV/TXT (план 5.4).
 
-## Покрытие сейчас (39 кейсов)
+## Покрытие сейчас (41 кейс)
 
-- L0 struct x8 (Б1, Б6, H1), pairs x5 (Б2), chains x8 (Б2, Б3, H3, H4),
-  targeted x4 (Б4, Б5, H9), evaluate x3 (H7), dump x2 — гейт G1.
-- L1 mini x7: struct budget+global, pairs pwbi+freq, chains lam=0/0.3,
-  targeted --emit, dump.
+- L0 struct x9 (Б1, Б6, H1, H8), pairs x5 (Б2), chains x8 (Б2, Б3, H3, H4),
+  targeted x5 (Б4, Б5, H6, H9), evaluate x3 (H7), dump x2 — гейт G1.
+- L1 mini x7 (struct budget+global, pairs pwbi+freq, chains lam=0/0.3,
+  targeted --emit) + dump-mini.
 - `spg-selftest` — заглушка под встроенный selftest из плана 4.1.
 
-В SKIP (помечены `(stub)` в usage): struct, pairs, chains, targeted,
-evaluate, selftest — 36 кейсов. Живые: dump x3 — PASS(bit), включая
-чексумму logu (libm vs numpy на этих входах совпали побитово; полный
-log/exp-скан плана 5.3 — отдельный этап).
+Из 40 живых кейсов: 34 PASS(bit); 2 PASS(canon) — chains-rt-lam05 и
+chains-h4-full (перестановки внутри групп ничьих, множества строк и метрики
+evaluate совпадают); 4 PASS(rc) — struct-h8-ntpl0 и chains-h3-b0/t0/lam2
+(обе стороны rc=1 с теми же подстроками сообщений). В SKIP только
+spg-selftest: подкоманды selftest в бинарнике нет.
 
 ## Контракт для C-разработчиков (чтобы кейсы снимались со SKIP сами)
 

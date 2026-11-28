@@ -13,6 +13,17 @@ def _sig(paths):
             for p in paths]
 
 
+def _parse_count(c, path, n):
+    """Count field of a model TSV: must be a positive integer."""
+    try:
+        ci = int(c)
+    except ValueError:
+        raise ValueError("%s:%d: bad count %r" % (path, n, c))
+    if ci <= 0:
+        raise ValueError("%s:%d: count must be >= 1, got %d" % (path, n, ci))
+    return ci
+
+
 class VocabModel:
     __slots__ = ("words", "wb", "widx", "counts", "logu", "bi_i", "bi_j",
                  "bi_cnt", "K")
@@ -41,12 +52,15 @@ def load_vocab_model(uni_path, bi_path, K, minlen=2, maxlen=10):
             if str(z["sig"][0]) == sig:
                 m = VocabModel()
                 blob = z["words_blob"].tobytes()
-                m.wb = blob.split(b"\n")
+                m.wb = blob.split(b"\n") if blob else []
                 m.words = [b.decode() for b in m.wb]
                 m.widx = {w: i for i, w in enumerate(m.words)}
                 m.counts = z["counts"]
                 m.bi_i, m.bi_j, m.bi_cnt = z["bi_i"], z["bi_j"], z["bi_cnt"]
                 m.K = len(m.words)
+                if m.K != len(m.counts):
+                    raise ValueError("corrupt cache: %d words vs %d counts"
+                                     % (m.K, len(m.counts)))
                 c = m.counts.astype(np.float64)
                 m.logu = np.log(c / c.sum())
                 return m
@@ -55,11 +69,12 @@ def load_vocab_model(uni_path, bi_path, K, minlen=2, maxlen=10):
 
     words, counts = [], []
     with open(uni_path) as f:
-        for line in f:
+        for n, line in enumerate(f, 1):
             w, c = line.rstrip("\n").split("\t")
             if minlen <= len(w) <= maxlen:
+                ci = _parse_count(c, uni_path, n)
                 words.append(w)
-                counts.append(int(c))
+                counts.append(ci)
             if len(words) == K:
                 break
     widx = {w: i for i, w in enumerate(words)}
@@ -67,7 +82,7 @@ def load_vocab_model(uni_path, bi_path, K, minlen=2, maxlen=10):
 
     bi_i, bi_j, bi_cnt = [], [], []
     with open(bi_path) as f:
-        for line in f:
+        for n, line in enumerate(f, 1):
             pair, cnt = line.rstrip("\n").rsplit("\t", 1)
             ab = pair.split(" ")
             if len(ab) != 2:
@@ -77,7 +92,7 @@ def load_vocab_model(uni_path, bi_path, K, minlen=2, maxlen=10):
             if i is not None and j is not None:
                 bi_i.append(i)
                 bi_j.append(j)
-                bi_cnt.append(int(cnt))
+                bi_cnt.append(_parse_count(cnt, bi_path, n))
 
     m = VocabModel()
     m.words, m.widx, m.K = words, widx, K

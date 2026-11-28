@@ -97,15 +97,15 @@ python3 src/train_password_ngrams.py mydump.txt data/count_1w.txt data/pw
 python3 src/train_struct.py mydump.txt data/struct
 ```
 
-The first writes `data/pw_uni.tsv` / `data/pw_bi.tsv` (word unigram/bigram counts; `count_1w.txt` is a reference web-ngram vocabulary used only to guide word segmentation, it ships in the data pack). The second writes the `data/struct_*.tsv` template tables. Both generators then pick up whatever is in `data/` — retraining is how you aim the tool at a specific language, community or leak. If your dump has usage counts, repeat each password accordingly (or concatenate several dumps) — the trainers count occurrences.
+The first writes `data/pw_uni.tsv` / `data/pw_bi.tsv` (word unigram/bigram counts). Its second argument, `count_1w.txt`, is a reference web-ngram vocabulary used only to guide word segmentation — it is not produced from your dump; it ships in the data pack, so unpack `sp-model-rockyou-v2.tar.gz` first (see Quick Start) or point the argument at any word-frequency list. The second writes the `data/struct_*.tsv` template tables. Both trainers create the output directory (`data/` above) if it does not exist. Both generators then pick up whatever is in `data/` — retraining is how you aim the tool at a specific language, community or leak. If your dump has usage counts, repeat each password accordingly (or concatenate several dumps) — the trainers count occurrences.
 
 ### Targeted mode
 
 ```
-c/spg targeted data/pw_uni.tsv data/pw_bi.tsv /dev/null 200 10000 --emit=elena,1990
+c/spg targeted data/pw_uni.tsv data/pw_bi.tsv /dev/null 200 10000 --emit=elena,maria
 ```
 
-`--emit=w1,w2,...` streams candidates for specific pivot words (no test file needed, `/dev/null` stands in). For a measured run instead, pass your own password list in place of `/dev/null`:
+`--emit=w1,w2,...` streams candidates for specific pivot words (no test file needed, `/dev/null` stands in). Pivots must be alphabetic words from the model vocabulary — anything else (a year like `1990`, a nickname with digits) is skipped with a `not in vocab` warning on stderr. For a measured run instead, pass your own password list in place of `/dev/null`:
 
 ```
 c/spg targeted data/pw_uni.tsv data/pw_bi.tsv mylist.txt 200 10000 --personal=words.txt --service=linkedin --deleet
@@ -186,18 +186,17 @@ zaqqazwsx
 ```
 
 ```
-$ c/spg targeted data/... 200 10000 --personal=words.txt --emit
-# words.txt: sunshine, qwerty
-qwertyasdfgh
+$ c/spg targeted data/pw_uni.tsv data/pw_bi.tsv /dev/null 200 10000 --emit=sunshine,qwerty
+sunshinegirl
+rulesqwerty
 qwertyasd
-qwertypop
-passwordqwerty
-qwertyqaz
-qwertyabc
 sunshinebaby
-qwertykeyboard
-qwertylol
-qwertypoo
+sunshineday
+qwertypop
+qwertyabc
+sunshinebabe
+sunshinebear
+sunshineyahoo
 ```
 
 ## FAQ

@@ -41,6 +41,8 @@ pos = [a for a in sys.argv[1:] if a != "--no-dedup"]
 K, LIMIT = int(pos[5]), int(pos[6])
 ALPHA = float(pos[7]) if len(pos) > 7 else 0.7
 MODE = pos[8] if len(pos) > 8 else "budget"
+if MODE not in ("budget", "global"):
+    sys.exit("error: unknown mode %r (expected: budget, global)" % MODE)
 NTPL = int(pos[9]) if len(pos) > 9 else 300
 if NTPL < 1:
     sys.exit("error: NTPL (templates cap) must be >= 1, got %d" % NTPL)
@@ -124,17 +126,27 @@ if fillers is None:
         items = sorted(d.items(), key=lambda kv: -kv[1])[:TOP_FILL]
         fillers[L] = ([k for k, _ in items], np.array([v for _, v in items]))
     if not _FULLSORT:
-        with open(fcache, "wb") as f:
-            pickle.dump((fsig, fillers), f, protocol=4)
+        try:
+            with open(fcache, "wb") as f:
+                pickle.dump((fsig, fillers), f, protocol=4)
+        except OSError:
+            print("warning: cannot write filler cache %s (continuing without cache)"
+                  % fcache, file=sys.stderr)
 
 # --- digits and symbols per length ---
 def load_run_values(path):
     vals, totals = {}, {}
     with open(path) as f:
-        for line in f:
+        for n, line in enumerate(f, 1):
             l, v, c = line.rstrip("\n").split("\t")
             l = int(l)
-            c = int(c)
+            try:
+                c = int(c)
+            except ValueError:
+                raise ValueError("%s:%d: bad count %r" % (path, n, c))
+            if c <= 0:
+                raise ValueError("%s:%d: count must be >= 1, got %d"
+                                 % (path, n, c))
             vals.setdefault(l, []).append((v.encode(), c))
             totals[l] = totals.get(l, 0) + c
     out = {}
@@ -151,8 +163,15 @@ sym = load_run_values(sym_path)
 seg_re = re.compile(r"([ADS])(\d+)")
 tpls = []
 with open(tpl_path) as f:
-    for line in f:
+    for n, line in enumerate(f, 1):
         t, c = line.rstrip("\n").split("\t")
+        try:
+            c = int(c)
+        except ValueError:
+            raise ValueError("%s:%d: bad count %r" % (tpl_path, n, c))
+        if c < 0:  # zero-count templates are legal: they emit nothing (H1)
+            raise ValueError("%s:%d: count must be >= 0, got %d"
+                             % (tpl_path, n, c))
         segs = []
         ok = True
         for cls, ln in seg_re.findall(t):
@@ -163,7 +182,7 @@ with open(tpl_path) as f:
                 break
             segs.append(lst)
         if ok:
-            tpls.append((int(c), segs))
+            tpls.append((c, segs))
         if len(tpls) == NTPL:
             break
 

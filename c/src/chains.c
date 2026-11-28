@@ -442,7 +442,19 @@ static void ow_flush(outw *o)
 static void ow_line(outw *o, const uint8_t *s, size_t n)
 {
   if (OUTBUF_CAP - o->len < n + 1)
+  {
     ow_flush(o);
+
+    /* candidates are 3 loader-bounded words (<= 30 bytes), so this cannot
+     * trigger on a valid model; direct-write instead of overflowing the
+     * buffer if that invariant is ever broken (defense in depth) */
+    if (n + 1 > OUTBUF_CAP)
+    {
+      fwrite(s, 1, n, stdout);
+      fputc('\n', stdout);
+      return;
+    }
+  }
 
   memcpy(o->buf + o->len, s, n);
   o->len += n;
@@ -615,6 +627,15 @@ int cmd_chains(int argc, char **argv)
   for (uint32_t i = 0; i < K; i++)
     s2[(size_t) i * K + i] = NEG_INF;
 
+  /* defense in depth (audit): a NaN or +inf score is only possible with a
+   * corrupt model (e.g. non-positive unigram counts slipping past a lenient
+   * loader) and breaks the selection invariants below -- the top-B fill can
+   * come up short and leave `seams` uninitialized, crashing far away from
+   * the cause.  Mask such cells like the diagonal. */
+  for (uint64_t p = 0; p < KK; p++)
+    if (isnan(s2[p]) || s2[p] == INFINITY)
+      s2[p] = NEG_INF;
+
   /* top-Bb seams, canonical order (score desc, flat idx asc) */
   sel_rec *seams = xmalloc((size_t) Bb * sizeof(sel_rec));
   uint64_t ns = 0;
@@ -746,6 +767,12 @@ int cmd_chains(int argc, char **argv)
           if (cl < lmin || cl > lmax)
             sv = NEG_INF;
         }
+
+        /* defense in depth (audit): a NaN/+inf continuation score (corrupt
+         * model; the lam path can make NaN from inf-inf) would break the
+         * top-cut fill below and leave `ord` uninitialized -- mask it */
+        if (isnan(sv) || sv == INFINITY)
+          sv = NEG_INF;
 
         sc[c] = sv;
         kk[c] = (int32_t) k;

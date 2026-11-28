@@ -17,13 +17,23 @@ def _friendly_excepthook(exc_type, exc, tb):
     sys.__excepthook__(exc_type, exc, tb)
 
 sys.excepthook = _friendly_excepthook
-import re
+import os, re
 from collections import Counter
 
 if "--help" in sys.argv or len([a for a in sys.argv[1:] if not a.startswith("--")]) < 2:
     sys.stderr.write("usage: train_struct.py TRAIN.txt OUT_PREFIX\n");
     sys.exit(1)
 train_path, out_prefix = sys.argv[1], sys.argv[2]
+
+# fail fast: create the output directory before doing any work
+out_dir = os.path.dirname(out_prefix)
+if out_dir:
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as e:
+        sys.stderr.write("error: cannot create output directory %s: %s\n"
+                         % (out_dir, e.strerror or e))
+        sys.exit(1)
 
 seg_re = re.compile(r"[a-z]+|[0-9]+|[^a-z0-9]+")
 

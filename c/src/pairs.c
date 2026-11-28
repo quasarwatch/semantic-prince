@@ -239,6 +239,17 @@ static void emit_pair(const sp_model *m, uint32_t i, uint32_t j)
   {
     fwrite(out_buf, 1, out_len, stdout);
     out_len = 0;
+
+    /* words are loader-bounded (wlens <= 10), so this cannot trigger on a
+     * valid model; direct-write instead of overflowing out_buf if that
+     * invariant is ever broken (defense in depth) */
+    if ((uint64_t) l1 + l2 + 1 > OUT_CAP)
+    {
+      fwrite(m->words[i], 1, l1, stdout);
+      fwrite(m->words[j], 1, l2, stdout);
+      fputc('\n', stdout);
+      return;
+    }
   }
 
   memcpy(out_buf + out_len, m->words[i], l1);

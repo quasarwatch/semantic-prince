@@ -147,6 +147,31 @@ static int split_words_blob(sp_model *m)
     pos = end + 1;
   }
 
+  /* the blob must hold exactly K words: K-1 separators, no trailing one */
+  return (pos == m->words_blob_len + 1) ? 0 : -1;
+}
+
+/* TSV count field: a positive decimal integer with optional surrounding
+ * whitespace (python int() semantics).  Returns 0 on success; -1 on junk
+ * or count <= 0 -- python raises on int() failures, and counts <= 0 make
+ * log(counts/sum) NaN, which downstream selection turns into wild indexes. */
+static int parse_count(const char *s, int64_t *out)
+{
+  char *end = NULL;
+  const long long v = strtoll(s, &end, 10);
+
+  if (end == s || v <= 0)
+    return -1;
+
+  while (*end == ' ' || *end == '\t' || *end == '\r'
+      || *end == '\n' || *end == '\v' || *end == '\f')
+    end++;
+
+  if (*end)
+    return -1;
+
+  *out = (int64_t) v;
+
   return 0;
 }
 
@@ -254,7 +279,35 @@ static void cache_path(const char *uni, uint32_t K, int minlen, int maxlen,
   strcpy(out + dlen, suffix);
 }
 
-static int load_npz(sp_model *m, const char *path, const char *sig)
+/* cached arrays come from a file we did not write: check every index,
+ * count and word length before they can reach a downstream indexer
+ * (pairs/chains/targeted trust bi_i/bi_j < K and wlens in [minlen, maxlen]) */
+static int cache_fields_sane(const sp_model *m, int minlen, int maxlen)
+{
+  for (uint32_t i = 0; i < m->K; i++)
+  {
+    if ((int64_t) m->wlens[i] < (int64_t) minlen
+     || (int64_t) m->wlens[i] > (int64_t) maxlen)
+      return 0;
+
+    if (m->counts[i] <= 0)
+      return 0;
+  }
+
+  for (uint64_t e = 0; e < m->E; e++)
+  {
+    if ((uint32_t) m->bi_i[e] >= m->K || (uint32_t) m->bi_j[e] >= m->K)
+      return 0;
+
+    if (m->bi_cnt[e] <= 0)
+      return 0;
+  }
+
+  return 1;
+}
+
+static int load_npz(sp_model *m, const char *path, const char *sig,
+                    int minlen, int maxlen)
 {
   npz_t *z = npz_open(path);
 
@@ -288,11 +341,20 @@ static int load_npz(sp_model *m, const char *path, const char *sig)
     if (m->words_blob && m->counts && m->bi_i && m->bi_j && m->bi_cnt
      && a_bi->data_len == a_bj->data_len
      && a_bi->data_len / 4 == m->E
+     && m->K > 0
      && split_words_blob(m) == 0
+     && cache_fields_sane(m, minlen, maxlen)
      && compute_logu(m) == 0)
     {
       m->source = 0;
       rc = 0;
+    }
+    else
+    {
+      /* sig matches but the payload is unusable: rebuild from the TSVs,
+       * same as python's "corrupt cache -> rebuild" fallback */
+      fprintf(stderr, "spg: %s: corrupt model cache, ignoring\n",
+              path_base(path));
     }
   }
 
@@ -344,12 +406,34 @@ static int load_tsv_uni(sp_model *m, const char *uni, uint32_t K,
 
     const size_t wlen = (size_t) (tab - line);
 
-    if ((int) wlen < minlen || (int) wlen > maxlen)
+    /* compare in int64_t: casting a >2GB wlen to int would wrap the check */
+    if ((int64_t) wlen < (int64_t) minlen || (int64_t) wlen > (int64_t) maxlen)
       continue;
 
-    if (m->words_blob_len + wlen + 1 > blob_cap)
+    if (parse_count(tab + 1, &m->counts[m->K]) != 0)
     {
-      blob_cap *= 2;
+      fprintf(stderr, "spg: %s: malformed or non-positive count\n",
+              path_base(uni));
+      free(line);
+      fclose(f);
+      return -1;
+    }
+
+    if (wlen + 1 > blob_cap - m->words_blob_len)
+    {
+      /* one doubling may not be enough for a long word; grow until it fits */
+      while (blob_cap - m->words_blob_len < wlen + 1)
+      {
+        if (blob_cap > SIZE_MAX / 2)
+        {
+          fprintf(stderr, "spg: %s: word too long\n", path_base(uni));
+          free(line);
+          fclose(f);
+          return -1;
+        }
+
+        blob_cap *= 2;
+      }
 
       uint8_t *nb = realloc(m->words_blob, blob_cap);
 
@@ -365,7 +449,6 @@ static int load_tsv_uni(sp_model *m, const char *uni, uint32_t K,
     memcpy(m->words_blob + m->words_blob_len, line, wlen);
     m->words_blob_len += wlen;
 
-    m->counts[m->K] = (int64_t) strtoll(tab + 1, NULL, 10);
     m->K++;
   }
 
@@ -443,6 +526,17 @@ static int load_tsv_bi(sp_model *m, const char *bi)
     if (i < 0 || j < 0)
       continue;
 
+    int64_t cnt;
+
+    if (parse_count(tab + 1, &cnt) != 0)
+    {
+      fprintf(stderr, "spg: %s: malformed or non-positive count\n",
+              path_base(bi));
+      free(line);
+      fclose(f);
+      return -1;
+    }
+
     if (m->E == cap)
     {
       cap *= 2;
@@ -468,7 +562,7 @@ static int load_tsv_bi(sp_model *m, const char *bi)
 
     m->bi_i[m->E]   = (int32_t) i;
     m->bi_j[m->E]   = (int32_t) j;
-    m->bi_cnt[m->E] = (int64_t) strtoll(tab + 1, NULL, 10);
+    m->bi_cnt[m->E] = cnt;
     m->E++;
   }
 
@@ -492,27 +586,32 @@ int sp_model_load(sp_model *m, const char *uni, const char *bi,
 
   cache_path(uni, K, minlen, maxlen, cpath, sizeof(cpath));
 
-  if (load_npz(m, cpath, sig) == 0)
+  if (load_npz(m, cpath, sig, minlen, maxlen) == 0)
     goto out_widx;
 
   sp_model_free(m);
   memset(m, 0, sizeof(*m));
 
   if (load_tsv_uni(m, uni, K, minlen, maxlen) != 0)
-    return -1;
+    goto fail;
 
   if (widx_build(m) != 0)
-    return -1;
+    goto fail;
 
   if (load_tsv_bi(m, bi) != 0)
-    return -1;
+    goto fail;
 
   if (compute_logu(m) != 0)
-    return -1;
+    goto fail;
 
   m->source = 1;
 
   return 0;
+
+fail:
+  sp_model_free(m);
+
+  return -1;
 
 out_widx:
   if (widx_build(m) != 0)

@@ -20,15 +20,26 @@ def _friendly_excepthook(exc_type, exc, tb):
     sys.__excepthook__(exc_type, exc, tb)
 
 sys.excepthook = _friendly_excepthook
-import math, re
+import math, os, re
 from collections import Counter
 
-if "--help" in sys.argv or len([a for a in sys.argv[1:] if not a.startswith("--")]) < 1:
-    sys.stderr.write("usage: train_password_ngrams.py DUMP.txt   (writes model tables into data/)\n");
+USAGE = "usage: train_password_ngrams.py TRAIN.txt COUNT_1W.txt OUT_PREFIX [formal_N] [runs_M]\n"
+if "--help" in sys.argv or len([a for a in sys.argv[1:] if not a.startswith("--")]) < 3:
+    sys.stderr.write(USAGE);
     sys.exit(1)
 train_path, uni_path, out_prefix = sys.argv[1], sys.argv[2], sys.argv[3]
 FORMAL_N = int(sys.argv[4]) if len(sys.argv) > 4 else 50000
 RUNS_M = int(sys.argv[5]) if len(sys.argv) > 5 else 30000
+
+# fail fast: create the output directory before doing any work
+out_dir = os.path.dirname(out_prefix)
+if out_dir:
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as e:
+        sys.stderr.write("error: cannot create output directory %s: %s\n"
+                         % (out_dir, e.strerror or e))
+        sys.exit(1)
 BETA = 6.0           # per-word boundary penalty (nats) -> prefer fewer, longer words
 UNK_PER_CHAR = 5.0   # unknown span penalty per char
 

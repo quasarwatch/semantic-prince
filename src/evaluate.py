@@ -26,7 +26,15 @@ checkpoints = [100_000, 1_000_000, 10_000_000, 100_000_000]
 with open(test_path, "rb") as f:
     testset = set(l.rstrip(b"\r\n") for l in f if l.strip())  # \r: CRLF files
 
+if not testset:
+    sys.stderr.write("error: test set is empty: %s\n" % test_path)
+    sys.exit(1)
+
 print(f"test set: {len(testset)} unique passwords", file=sys.stderr)
+
+if limit <= 0:
+    print(f"final: 0 guesses -> 0 cracked (0.00%)")
+    sys.exit(0)
 
 seen_hits = set()
 n = 0

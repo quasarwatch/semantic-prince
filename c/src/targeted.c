@@ -507,6 +507,22 @@ static int i64map_init(i64map *m, int64_t cap)
   if (cap < 16)
     cap = 16;
 
+  /* mask-based probing requires a power-of-two capacity */
+  uint64_t c = (uint64_t) cap - 1;
+
+  c |= c >> 1;
+  c |= c >> 2;
+  c |= c >> 4;
+  c |= c >> 8;
+  c |= c >> 16;
+  c |= c >> 32;
+  c++;
+
+  if (c > (uint64_t) INT64_MAX)
+    return -1;
+
+  cap = (int64_t) c;
+
   m->k = malloc((size_t) cap * sizeof(int64_t));
   m->v = malloc((size_t) cap * sizeof(int64_t));
 
@@ -624,6 +640,22 @@ static int i64set_init(i64set *s, int64_t cap)
 {
   if (cap < 16)
     cap = 16;
+
+  /* mask-based probing requires a power-of-two capacity */
+  uint64_t c = (uint64_t) cap - 1;
+
+  c |= c >> 1;
+  c |= c >> 2;
+  c |= c >> 4;
+  c |= c >> 8;
+  c |= c >> 16;
+  c |= c >> 32;
+  c++;
+
+  if (c > (uint64_t) INT64_MAX)
+    return -1;
+
+  cap = (int64_t) c;
 
   s->k = malloc((size_t) cap * sizeof(int64_t));
 
@@ -1195,6 +1227,12 @@ static int deleet_expand(const wlist *in, wlist *out)
   if (sset_init(&seen, 64) != 0)
     return -1;
 
+  /* the set does not own its entries: the pointers of `in` outlive the
+   * call, but the de-leet forms are built in a per-word scratch buffer,
+   * so newly inserted forms are stored as owned copies (freed below) */
+  uint8_t **seen_own = NULL;
+  uint32_t  n_own = 0, cap_own = 0;
+
   int rc = -1;
 
   for (uint32_t i = 0; i < in->n; i++)
@@ -1232,14 +1270,58 @@ static int deleet_expand(const wlist *in, wlist *out)
 
     if (changed)
     {
-      const int r2 = sset_add(&seen, dl, l);
+      uint8_t *copy = malloc(l);
 
-      if (r2 < 0 || (r2 == 1 && wlist_push_own(out, dl, l) != 0))
+      if (!copy)
       {
         if (dl != tmp)
           free(dl);
         goto out;
       }
+
+      memcpy(copy, dl, l);
+
+      const int r2 = sset_add(&seen, copy, l);
+
+      if (r2 < 0)
+      {
+        free(copy);
+        if (dl != tmp)
+          free(dl);
+        goto out;
+      }
+
+      if (r2 == 1)
+      {
+        if (n_own == cap_own)
+        {
+          const uint32_t ncap = cap_own ? cap_own * 2 : 16;
+
+          uint8_t **no = realloc(seen_own, ncap * sizeof(uint8_t *));
+
+          if (!no)
+          {
+            free(copy);
+            if (dl != tmp)
+              free(dl);
+            goto out;
+          }
+
+          seen_own = no;
+          cap_own = ncap;
+        }
+
+        seen_own[n_own++] = copy;
+
+        if (wlist_push_own(out, dl, l) != 0)
+        {
+          if (dl != tmp)
+            free(dl);
+          goto out;
+        }
+      }
+      else
+        free(copy);
     }
 
     if (dl != tmp)
@@ -1249,6 +1331,10 @@ static int deleet_expand(const wlist *in, wlist *out)
   rc = 0;
 
 out:
+  for (uint32_t i = 0; i < n_own; i++)
+    free(seen_own[i]);
+
+  free(seen_own);
   sset_free(&seen);
 
   return rc;
@@ -1802,6 +1888,15 @@ int spg_targeted(int argc, char **argv)
   const long  NP = (npos > 3) ? atol(pos[3]) : 200;
   const long  K_req = (npos > 4) ? atol(pos[4]) : 10000;
 
+  /* NP indexes into a uint32 vocabulary and is clamped to K anyway;
+   * reject values that cannot be represented (audit T2: NP >= 2^62
+   * wrapped the personal[] allocation size, heap-buffer-overflow) */
+  if (NP > (long) UINT32_MAX)
+  {
+    fprintf(stderr, "spg targeted: NP out of range\n");
+    return 1;
+  }
+
   int     rc = 1;
   sp_model m;
 
@@ -2055,6 +2150,14 @@ int spg_targeted(int argc, char **argv)
     uint64_t cap = (uint64_t) n_service
                  + (have_personal_file ? n_personal_file
                                        : (uint64_t) (NP > 0 ? NP : 0));
+
+    /* unreachable after the NP range check (cap <= 2^32 + n_service);
+     * belt and braces against a wrapped allocation size */
+    if (cap > (uint64_t) SIZE_MAX / sizeof(uint32_t))
+    {
+      fprintf(stderr, "spg targeted: personal list too large\n");
+      goto out;
+    }
 
     personal = malloc((size_t) (cap ? cap : 1) * sizeof(uint32_t));
 

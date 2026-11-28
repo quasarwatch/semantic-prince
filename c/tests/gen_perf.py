@@ -5,7 +5,7 @@ import os
 
 D = os.path.dirname(os.path.abspath(__file__))
 
-with open("$(pwd)/../data/test.txt", "rb") as f:
+with open(os.path.join(D, "..", "..", "data", "test.txt"), "rb") as f:
     testset = [l.rstrip(b"\r\n") for l in f if l.strip()]
 
 N = 33_000_000

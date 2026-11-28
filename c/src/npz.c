@@ -321,6 +321,11 @@ npz_t *npz_open(const char *path)
     const uint16_t comlen = rd16(c + 32);
     const uint32_t lho    = rd32(c + 42);
 
+    /* the whole CD record must be inside the buffer before we read the
+     * variable-length name (the EOCD-level check only covers 46*n_cd) */
+    if ((uint64_t) (c - z->buf) + 46 + nlen + elen + comlen > z->len)
+      goto fail;
+
     if (method != 0 || csize != usize)  /* STORED only */
       goto fail;
 
